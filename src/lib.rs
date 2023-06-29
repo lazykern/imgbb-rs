@@ -51,7 +51,7 @@ impl ImgBB {
         }
     }
 
-    pub async fn read_path<P>(&self, path: P) -> Result<Uploader, Error>
+    pub async fn read_file<P>(&self, path: P) -> Result<Uploader, Error>
     where
         P: AsRef<Path>,
     {
@@ -99,7 +99,7 @@ impl ImgBB {
     where
         P: AsRef<Path>,
     {
-        self.read_path(path).await?.upload().await
+        self.read_file(path).await?.upload().await
     }
 
     pub async fn upload_base64_with_expiration<T>(
@@ -132,7 +132,7 @@ impl ImgBB {
     where
         P: AsRef<Path>,
     {
-        self.read_path(path)
+        self.read_file(path)
             .await?
             .expiration(expiration)
             .upload()
