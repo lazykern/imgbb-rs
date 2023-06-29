@@ -86,7 +86,6 @@ async fn main() {
     imgbb.upload_base64("BASE64")
 ```
 
-
 ## License
 
 imgbb-rs is licensed under the [GNU GPL v3.0](./LICENSE)
