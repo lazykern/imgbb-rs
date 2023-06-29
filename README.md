@@ -2,6 +2,12 @@
 
 [ImgBB](https://imgbb.com/) API wrapper for rust
 
+## Getting Started
+
+1. [Register/Log in to ImbBB](https://imgbb.com/login)
+2. [Obtain the API Key](https://api.imgbb.com)
+3. Use the API Key in with the library
+
 ## Usage
 
 ### Straightforward
