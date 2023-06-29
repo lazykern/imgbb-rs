@@ -15,7 +15,7 @@ async fn main() {
     let imgbb = ImgBB::new("<API KEY>");
 
 
-    let res = match imgbb.upload_file_with_expiration("<FILE PATH>", <SECONDS>).await {
+    let res = match imgbb.upload_file_with_expiration("<PATH>", <SECONDS>).await {
         Ok(res) => res,
         Err(err) => {
             println!("{}", err);
@@ -39,7 +39,7 @@ async fn main() {
     let imgbb = ImgBB::new("<API KEY>");
 
     let ul = imgbb
-        .read_file("PATH").await.expect("Unable to read file")
+        .read_file("<PATH>").await.expect("Unable to read file")
         .expiration(<SECONDS>);
 
     let res = match ul.upload().await {
