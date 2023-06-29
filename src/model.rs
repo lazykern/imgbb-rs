@@ -1,5 +1,6 @@
 use serde::Deserialize;
 
+/// An struct for ImgBB API response
 #[derive(Debug, Deserialize, Clone)]
 pub struct Response {
     pub data: Option<Data>,
@@ -7,6 +8,7 @@ pub struct Response {
     pub status: Option<u16>,
 }
 
+/// An struct for *data* field in ImgBB API response
 #[derive(Debug, Deserialize, Clone)]
 pub struct Data {
     pub id: Option<String>,
@@ -25,6 +27,7 @@ pub struct Data {
     pub delete_url: Option<String>,
 }
 
+/// An struct for image value in ImgBB API response
 #[derive(Debug, Deserialize, Clone)]
 pub struct Image {
     pub filename: Option<String>,

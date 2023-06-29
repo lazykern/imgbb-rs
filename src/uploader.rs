@@ -3,12 +3,18 @@ use crate::Response;
 
 const URL: &str = "https://api.imgbb.com/1/upload";
 
+/// An struct that holds the data (base64) to be uploaded
 pub struct Uploader {
+    /// ImgBB API key
     pub api_key: String,
+    /// Base64 data to be uploaded
     pub data: Option<String>,
+    /// Expiration time in seconds
     pub expiration: Option<u64>,
 }
+
 impl Uploader {
+    /// Creates a new Uploader struct with the given API key
     pub fn new<T>(api_key: T) -> Self
     where
         T: Into<String>,
@@ -20,11 +26,13 @@ impl Uploader {
         }
     }
 
+    /// Set [expiration time](Uploader::expiration)
     pub fn expiration(&mut self, expiration: u64) -> &Self {
         self.expiration = Some(expiration);
         self
     }
 
+    /// Upload [data](Uploader::data) to ImgBB
     pub async fn upload(&self) -> Result<Response, Error> {
         let mut query = vec![("key", self.api_key.as_str())];
 
