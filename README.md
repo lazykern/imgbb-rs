@@ -2,26 +2,6 @@
 
 [ImgBB](https://imgbb.com/) API wrapper for rust
 
-## Supported data types
-
-- File & Path
-
-```rust
-    imgbb.read_file("PATH").await
-```
-
-- Bytes (`AsRef<u8>`)
-
-```rust
-    imgbb.read_bytes(&[u8])
-```
-
-- Base64 String
-
-```rust
-    imgbb.read_base64("BASE64")
-```
-
 ## Usage
 
 ### Straightforward
@@ -73,6 +53,33 @@ async fn main() {
     println!("{:#?}", res);
 }
 ```
+
+## Supported data types
+
+- File & Path
+
+```rust
+    imgbb.read_file("PATH").await
+    // or
+    imgbb.upload_file("PATH").await
+```
+
+- Bytes (`AsRef<u8>`)
+
+```rust
+    imgbb.read_bytes(&[u8])
+    // or 
+    imgbb.upload_bytes(&[u8])
+```
+
+- Base64 String
+
+```rust
+    imgbb.read_base64("BASE64")
+    // or
+    imgbb.upload_base64("BASE64")
+```
+
 
 ## License
 
