@@ -1,6 +1,7 @@
 [package]
 name = "imgbb"
-version = "0.1.0"
+description = "ImgBB API wrapper for Rust"
+version = "1.0.0"
 edition = "2021"
 authors = ["phusitsom"]
 readme = "README.md"
