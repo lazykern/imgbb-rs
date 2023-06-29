@@ -6,6 +6,7 @@ use tokio;
 struct Cli {
     key: String,
     path: String,
+    expiration: Option<u64>,
 }
 
 #[tokio::main]
@@ -15,7 +16,13 @@ async fn main() {
     let imgbb = ImgBB::new(cli.key);
     let path = cli.path;
 
-    let res = match imgbb.upload_file(path).await {
+    let mut ul = imgbb.read_file(path).await.expect("Unable to read file");
+
+    if let Some(expiration) = cli.expiration {
+        ul.expiration(expiration);
+    }
+
+    let res = match ul.upload().await {
         Ok(res) => res,
         Err(err) => {
             println!("{}", err);
@@ -25,3 +32,4 @@ async fn main() {
 
     println!("{:#?}", res);
 }
+
