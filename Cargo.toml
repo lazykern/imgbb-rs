@@ -5,7 +5,7 @@ version = "1.0.0"
 edition = "2021"
 authors = ["phusitsom"]
 readme = "README.md"
-license = "GNU General Public License version 3"
+license = "MIT"
 keywords = ["imgbb", "image", "hosting", "api"]
 repository = "https://github.com/phusitsom/imgbb-rs"
 
