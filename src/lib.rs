@@ -1,6 +1,5 @@
 use base64::engine::{general_purpose, Engine};
 use std::path::Path;
-use tokio::fs;
 
 /// Module for ImgBB API error
 pub mod error;
@@ -59,11 +58,11 @@ impl ImgBB {
     }
 
     /// Read file from path and return an [Uploader](Uploader) struct to upload in the next step
-    pub async fn read_file<P>(&self, path: P) -> Result<Uploader, Error>
+    pub fn read_file<P>(&self, path: P) -> Result<Uploader, Error>
     where
         P: AsRef<Path>,
     {
-        let f = fs::read(path).await?;
+        let f = std::fs::read(path)?;
         let d = Some(general_purpose::STANDARD.encode(f));
 
         Ok(Uploader {
@@ -111,7 +110,7 @@ impl ImgBB {
     where
         P: AsRef<Path>,
     {
-        self.read_file(path).await?.upload().await
+        self.read_file(path)?.upload().await
     }
 
     /// Upload base64 data to ImgBB with expiration time (seconds)
@@ -147,10 +146,6 @@ impl ImgBB {
     where
         P: AsRef<Path>,
     {
-        self.read_file(path)
-            .await?
-            .expiration(expiration)
-            .upload()
-            .await
+        self.read_file(path)?.expiration(expiration).upload().await
     }
 }

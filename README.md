@@ -45,7 +45,7 @@ async fn main() {
     let imgbb = ImgBB::new("<API KEY>");
 
     let ul = imgbb
-        .read_file("<PATH>").await.expect("Unable to read file")
+        .read_file("<PATH>").expect("Unable to read file")
         .expiration(<SECONDS>);
 
     let res = match ul.upload().await {
@@ -65,7 +65,7 @@ async fn main() {
 - File & Path
 
 ```rust
-    imgbb.read_file("PATH").await
+    imgbb.read_file("PATH").expect("Unable to read file").upload().await
     // or
     imgbb.upload_file("PATH").await
 ```
@@ -73,17 +73,17 @@ async fn main() {
 - Bytes (`AsRef<u8>`)
 
 ```rust
-    imgbb.read_bytes(&[u8])
-    // or 
-    imgbb.upload_bytes(&[u8])
+    imgbb.read_bytes(&[u8]).upload().await
+    // or
+    imgbb.upload_bytes(&[u8]).await
 ```
 
 - Base64 String
 
 ```rust
-    imgbb.read_base64("BASE64")
+    imgbb.read_base64("BASE64").upload().await
     // or
-    imgbb.upload_base64("BASE64")
+    imgbb.upload_base64("BASE64").await
 ```
 
 ## License

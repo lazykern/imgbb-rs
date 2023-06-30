@@ -16,7 +16,7 @@ async fn main() {
     let imgbb = ImgBB::new(cli.key);
     let path = cli.path;
 
-    let mut ul = imgbb.read_file(path).await.expect("Unable to read file");
+    let mut ul = imgbb.read_file(path).expect("Unable to read file");
 
     if let Some(expiration) = cli.expiration {
         ul.expiration(expiration);
@@ -32,4 +32,3 @@ async fn main() {
 
     println!("{:#?}", res);
 }
-
