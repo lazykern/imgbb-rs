@@ -32,6 +32,16 @@ impl ImgBB {
         }
     }
 
+    pub fn new_with_client<T>(api_key: T, client: reqwest::Client) -> Self
+    where
+        T: Into<String>,
+    {
+        Self {
+            client,
+            api_key: api_key.into(),
+        }
+    }
+
     /// Read base64 data and return an [Uploader](Uploader) struct to upload in the next step
     pub fn read_base64<T>(&self, data: T) -> Uploader
     where
