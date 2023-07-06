@@ -13,12 +13,14 @@ use model::*;
 pub mod uploader;
 use uploader::*;
 
-/// Main struct for this crate
+/// Module for ImgBB API client
 #[derive(Debug)]
 pub struct ImgBB {
     client: reqwest::Client,
     api_key: String,
 }
+
+static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
 
 impl ImgBB {
     /// Creates a new ImgBB client with the given API key
@@ -27,11 +29,15 @@ impl ImgBB {
         T: Into<String>,
     {
         Self {
-            client: reqwest::Client::new(),
+            client: reqwest::Client::builder()
+                .user_agent(APP_USER_AGENT)
+                .build()
+                .unwrap(),
             api_key: api_key.into(),
         }
     }
 
+    /// Creates a new ImgBB client with the given API key and reqwest client
     pub fn new_with_client<T>(api_key: T, client: reqwest::Client) -> Self
     where
         T: Into<String>,
