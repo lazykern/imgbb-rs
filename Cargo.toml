@@ -1,13 +1,13 @@
 [package]
 name = "imgbb"
 description = "ImgBB API wrapper for Rust"
-version = "1.2.1"
+version = "1.2.2"
 edition = "2021"
-authors = ["phusitsom"]
+authors = ["pulllazy"]
 readme = "README.md"
 license = "MIT"
 keywords = ["imgbb", "image", "hosting", "api"]
-repository = "https://github.com/phusitsom/imgbb-rs"
+repository = "https://github.com/pulllazy/imgbb-rs"
 
 [dependencies]
 base64 = "0.21.2"
