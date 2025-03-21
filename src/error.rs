@@ -1,30 +1,41 @@
-use std::fmt::Display;
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum Error {
-    IOError(std::io::Error),
-    ReqwestError(reqwest::Error),
-}
+    #[error("IO Error: {0}")]
+    IOError(#[from] std::io::Error),
+    
+    #[error("Reqwest Error: {0}")]
+    ReqwestError(#[from] reqwest::Error),
+    
+    #[error("ImgBB API Error: {message}")]
+    ApiError {
+        message: String,
+        status: Option<u16>,
+        code: Option<u16>,
+    },
+    
+    #[error("Missing field '{0}' in API response")]
+    MissingField(String),
+    
+    #[error("Invalid API key")]
+    InvalidApiKey,
+    
+    #[error("Invalid base64 data")]
+    InvalidBase64Data,
+    
+    #[error("Image too large")]
+    ImageTooLarge,
+    
+    #[error("Unsupported image format")]
+    UnsupportedFormat,
+    
+    #[error("Request timeout")]
+    Timeout,
 
-impl Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match &self {
-            Self::IOError(err) => write!(f, "IO Error: {}", err),
-            Self::ReqwestError(err) => write!(f, "Reqwest Error: {}", err),
-        }
-    }
-}
+    #[error("Rate limit exceeded")]
+    RateLimitExceeded,
 
-impl std::error::Error for Error {}
-
-impl From<std::io::Error> for Error {
-    fn from(err: std::io::Error) -> Self {
-        Self::IOError(err)
-    }
-}
-
-impl From<reqwest::Error> for Error {
-    fn from(err: reqwest::Error) -> Self {
-        Self::ReqwestError(err)
-    }
+    #[error("Invalid or missing parameters: {0}")]
+    InvalidParameters(String),
 }

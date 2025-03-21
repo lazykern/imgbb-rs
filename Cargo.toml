@@ -1,20 +1,30 @@
 [package]
 name = "imgbb"
 description = "ImgBB API wrapper for Rust"
-version = "1.2.2"
+version = "1.3.0"
 edition = "2021"
 authors = ["pullinglazy"]
 readme = "README.md"
 license = "MIT"
 keywords = ["imgbb", "image", "hosting", "api"]
 repository = "https://github.com/pulllazy/imgbb-rs"
+categories = ["api-bindings"]
+
+[features]
+default = ["blocking"]
+blocking = ["reqwest/blocking"]
+rustls-tls = ["reqwest/rustls-tls"]
+native-tls = ["reqwest/native-tls"]
 
 [dependencies]
-base64 = "0.21.2"
-reqwest = { version = "0.11.18", features = ["json"] }
-serde = { version = "1.0.164", features = ["derive"] }
-serde_json = "1.0.99"
+base64 = "0.22.1"
+reqwest = { version = "0.12.12", features = ["json"] }
+serde = { version = "1.0.194", features = ["derive"] }
+serde_json = "1.0.140"
+thiserror = "2.0.12"
 
 [dev-dependencies]
-clap = { version = "4.3.9", features = ["derive"] }
-tokio = { version = "1.29.0", features = ["macros", "rt-multi-thread"] }
+clap = { version = "4", features = ["derive"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+mockito = "1.2.0"
+tokio-test = "0.4.3"
