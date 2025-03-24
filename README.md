@@ -25,7 +25,7 @@ A comprehensive and flexible [ImgBB](https://imgbb.com/) API client for Rust
 
 ```toml
 [dependencies]
-imgbb = "1.3.0"
+imgbb = "1.4.0"
 ```
 
 ## Usage Examples
