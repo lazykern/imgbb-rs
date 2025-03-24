@@ -19,7 +19,7 @@ struct Cli {
     expiration: Option<u64>,
 
     /// Custom timeout in seconds
-    #[arg(short, long)]
+    #[arg(short = 'T', long)]
     timeout: Option<u64>,
 
     /// Title for the image
@@ -47,27 +47,31 @@ async fn main() -> Result<(), Error> {
     let imgbb = builder.build()?;
 
     // If we have additional parameters, use the builder pattern
-    if cli.title.is_some() || cli.name.is_some() {
-        let mut uploader = imgbb.upload_builder();
+    if cli.title.is_some() || cli.name.is_some() || cli.expiration.is_some() {
+        println!("Using advanced upload with options...");
         
-        // Set the file
-        uploader.file(&cli.file)?;
+        // Create and configure the upload builder
+        let mut builder = imgbb.upload_builder()
+            .file(&cli.file)?;
         
         // Set optional parameters
         if let Some(exp) = cli.expiration {
-            uploader.expiration(exp);
+            println!("Setting expiration: {} seconds", exp);
+            builder = builder.expiration(exp);
         }
         
         if let Some(title) = cli.title {
-            uploader.title(title);
+            println!("Setting title: {}", title);
+            builder = builder.title(title);
         }
         
         if let Some(name) = cli.name {
-            uploader.name(name);
+            println!("Setting name: {}", name);
+            builder = builder.name(name);
         }
         
         // Upload the image
-        let response = uploader.upload().await?;
+        let response = builder.upload().await?;
         
         // Print the result
         if let Some(data) = response.data {
@@ -85,12 +89,9 @@ async fn main() -> Result<(), Error> {
             }
         }
     } else {
+        println!("Using simple upload...");
         // Simple upload
-        let response = if let Some(exp) = cli.expiration {
-            imgbb.upload_file_with_expiration(&cli.file, exp).await?
-        } else {
-            imgbb.upload_file(&cli.file).await?
-        };
+        let response = imgbb.upload_file(&cli.file).await?;
         
         // Print the result
         if let Some(data) = response.data {

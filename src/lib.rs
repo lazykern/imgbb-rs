@@ -1,3 +1,7 @@
+// Constants for API endpoints and configuration
+const IMGBB_API_URL: &str = "https://api.imgbb.com/1/upload";
+static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
+
 use base64::engine::{general_purpose, Engine};
 use std::path::Path;
 use std::time::Duration;
@@ -69,8 +73,6 @@ pub struct ImgBBBuilder {
     user_agent: Option<String>,
     client: Option<reqwest::Client>,
 }
-
-static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
 
 impl ImgBB {
     /// Creates a new ImgBB client with the given API key
@@ -206,96 +208,68 @@ impl ImgBB {
             name: None,
             title: None,
             album: None,
-            client: &self.client,
+            client: self.client.clone(),
         }
     }
 
     /// Delete an image from ImgBB using the given delete URL
     ///
-    /// This method deletes an image from ImgBB using the delete URL that was
-    /// provided in the upload response.
-    ///
     /// # Arguments
     ///
-    /// * `delete_url` - The delete URL for the image from the original upload response
-    ///
-    /// # Examples
-    ///
-    /// ```rust,no_run
-    /// use imgbb::ImgBB;
-    ///
-    /// async fn example() -> Result<(), imgbb::Error> {
-    ///     let imgbb = ImgBB::new("your_api_key");
-    ///
-    ///     // The delete URL from the upload response
-    ///     let delete_url = "https://ibb.co/abc123/delete_hash";
-    ///
-    ///     // Delete the image
-    ///     imgbb.delete(delete_url).await?;
-    ///     println!("Image deleted successfully");
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
+    /// * `delete_url` - The delete URL for the image
     ///
     /// # Errors
     ///
-    /// Returns an error if the request fails, if the API returns an error response,
-    /// or if the API key is invalid.
+    /// Returns an error if:
+    /// - The API request fails
+    /// - The API returns an error response
+    /// - The API key is invalid
     pub async fn delete<T>(&self, delete_url: T) -> Result<(), Error>
     where
         T: Into<String>,
     {
         let query = [("key", self.api_key.as_str())];
-
         let res = self.client
             .delete(&delete_url.into())
             .query(&query)
             .send()
             .await?;
 
-        let status = res.status().as_u16();
-        
-        // Try to parse as Response first to handle API errors
-        if let Ok(response) = res.json::<Response>().await {
-            if let Some(error) = response.error {
-                let error_code = error.code.unwrap_or(0);
-                let error_message = error.message.unwrap_or_else(|| "Unknown error".to_string());
-                
-                return match error_code {
-                    100 => Err(Error::InvalidApiKey),
-                    400 => Err(Error::InvalidParameters(error_message)),
-                    429 => Err(Error::RateLimitExceeded),
-                    _ => Err(Error::ApiError {
-                        message: error_message,
-                        status: Some(status),
-                        code: Some(error_code),
-                    }),
-                };
+        let status = res.status();
+        let body = res.text().await?;
+
+        // Try to parse the response
+        match serde_json::from_str::<Response>(&body) {
+            Ok(response) => {
+                if let Some(error) = response.error {
+                    let error_code = error.code.unwrap_or(0);
+                    let error_message = error.message.unwrap_or_else(|| "Unknown error".to_string());
+                    
+                    return match error_code {
+                        100 => Err(Error::InvalidApiKey),
+                        400 => Err(Error::InvalidParameters(error_message)),
+                        429 => Err(Error::RateLimitExceeded),
+                        _ => Err(Error::ApiError {
+                            message: error_message,
+                            status: Some(status.as_u16()),
+                            code: Some(error_code),
+                        }),
+                    };
+                }
+                Ok(())
+            },
+            Err(_) => {
+                if status.is_success() {
+                    Ok(())
+                } else {
+                    Err(Error::ApiError {
+                        message: format!("Delete failed: {}", body),
+                        status: Some(status.as_u16()),
+                        code: None,
+                    })
+                }
             }
-
-            // If we successfully parsed the response but got a non-2xx status code
-            if !response.success.unwrap_or(false) {
-                return Err(Error::ApiError {
-                    message: "Delete failed without specific error".to_string(),
-                    status: Some(status),
-                    code: None,
-                });
-            }
-
-            return Ok(());
         }
-
-        // If we couldn't parse the response and got a non-2xx status code
-        if status >= 400 {
-            return Err(Error::ApiError {
-                message: format!("Delete failed with status code {}", status),
-                status: Some(status),
-                code: None,
-            });
-        }
-
-        Ok(())
     }
 
     /// Straightforward upload base64 data to ImgBB
@@ -516,8 +490,7 @@ impl ImgBBBuilder {
 ///     let imgbb = ImgBB::new("your_api_key");
 ///
 ///     // Create an uploader with custom options
-///     let mut uploader = imgbb.upload_builder();
-///     let response = uploader
+///     let response = imgbb.upload_builder()
 ///         .file("path/to/image.jpg")?
 ///         .name("custom_name")
 ///         .title("My Image")
@@ -531,28 +504,37 @@ impl ImgBBBuilder {
 ///     Ok(())
 /// }
 /// ```
-pub struct UploaderBuilder<'a> {
+#[derive(Clone)]
+pub struct UploaderBuilder {
     api_key: String,
     data: Option<String>,
     expiration: Option<u64>,
     name: Option<String>,
     title: Option<String>,
     album: Option<String>,
-    client: &'a reqwest::Client,
+    client: reqwest::Client,
 }
 
-impl<'a> UploaderBuilder<'a> {
-    /// Set the base64 data
-    pub fn data<T>(&mut self, data: T) -> &mut Self
+impl UploaderBuilder {
+    /// Set the base64 data for upload
+    ///
+    /// # Arguments
+    ///
+    /// * `data` - Base64 encoded string of the image
+    pub fn data<T>(mut self, data: T) -> Self
     where
         T: AsRef<str>,
     {
-        self.data = Some(data.as_ref().to_string());
+        self.data = Some(data.as_ref().to_owned());
         self
     }
 
-    /// Set the raw bytes data, which will be encoded as base64
-    pub fn bytes<T>(&mut self, data: T) -> &mut Self
+    /// Set the raw bytes data for upload, which will be encoded as base64
+    ///
+    /// # Arguments
+    ///
+    /// * `data` - Raw bytes of the image
+    pub fn bytes<T>(mut self, data: T) -> Self
     where
         T: AsRef<[u8]>,
     {
@@ -561,7 +543,15 @@ impl<'a> UploaderBuilder<'a> {
     }
 
     /// Set data from a file path
-    pub fn file<P>(&mut self, path: P) -> Result<&mut Self, Error>
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - Path to the image file
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be read
+    pub fn file<P>(mut self, path: P) -> Result<Self, Error>
     where
         P: AsRef<Path>,
     {
@@ -571,13 +561,21 @@ impl<'a> UploaderBuilder<'a> {
     }
 
     /// Set the expiration time in seconds
-    pub fn expiration(&mut self, expiration: u64) -> &mut Self {
+    ///
+    /// # Arguments
+    ///
+    /// * `expiration` - Time in seconds until the image expires
+    pub fn expiration(mut self, expiration: u64) -> Self {
         self.expiration = Some(expiration);
         self
     }
 
     /// Set the image name
-    pub fn name<T>(&mut self, name: T) -> &mut Self
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Name for the uploaded image
+    pub fn name<T>(mut self, name: T) -> Self
     where
         T: Into<String>,
     {
@@ -586,7 +584,11 @@ impl<'a> UploaderBuilder<'a> {
     }
 
     /// Set the image title
-    pub fn title<T>(&mut self, title: T) -> &mut Self
+    ///
+    /// # Arguments
+    ///
+    /// * `title` - Title for the uploaded image
+    pub fn title<T>(mut self, title: T) -> Self
     where
         T: Into<String>,
     {
@@ -595,7 +597,11 @@ impl<'a> UploaderBuilder<'a> {
     }
 
     /// Set the album ID
-    pub fn album<T>(&mut self, album: T) -> &mut Self
+    ///
+    /// # Arguments
+    ///
+    /// * `album` - ID of the album to add the image to
+    pub fn album<T>(mut self, album: T) -> Self
     where
         T: Into<String>,
     {
@@ -604,7 +610,14 @@ impl<'a> UploaderBuilder<'a> {
     }
 
     /// Upload the image with all specified options
-    pub async fn upload(&self) -> Result<Response, Error> {
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - No image data has been set
+    /// - The API request fails
+    /// - The API returns an error response
+    pub async fn upload(self) -> Result<Response, Error> {
         if self.data.is_none() {
             return Err(Error::MissingField("data".to_string()));
         }
@@ -612,7 +625,7 @@ impl<'a> UploaderBuilder<'a> {
         let mut query = vec![("key", self.api_key.as_str())];
         let mut form = vec![("image", self.data.as_ref().unwrap().as_str())];
 
-        // Handle expiration separately to avoid temporary value issues
+        // Store expiration string to extend its lifetime
         let expiration_str;
         if let Some(exp) = &self.expiration {
             expiration_str = exp.to_string();
@@ -632,17 +645,40 @@ impl<'a> UploaderBuilder<'a> {
         }
 
         let res = self.client
-            .post(URL)
+            .post(IMGBB_API_URL)
             .query(&query)
             .form(&form)
             .send()
-            .await?
-            .error_for_status()?
-            .json::<Response>()
             .await?;
 
-        Ok(res)
+        let status = res.status();
+        let body = res.text().await?;
+
+        // Try to parse the response
+        match serde_json::from_str::<Response>(&body) {
+            Ok(response) => {
+                if let Some(error) = response.error {
+                    let error_code = error.code.unwrap_or(0);
+                    let error_message = error.message.unwrap_or_else(|| "Unknown error".to_string());
+                    
+                    return match error_code {
+                        100 => Err(Error::InvalidApiKey),
+                        400 => Err(Error::InvalidParameters(error_message)),
+                        429 => Err(Error::RateLimitExceeded),
+                        _ => Err(Error::ApiError {
+                            message: error_message,
+                            status: Some(status.as_u16()),
+                            code: Some(error_code),
+                        }),
+                    };
+                }
+                Ok(response)
+            },
+            Err(_) => Err(Error::ApiError {
+                message: format!("Failed to parse response: {}", body),
+                status: Some(status.as_u16()),
+                code: None,
+            }),
+        }
     }
 }
-
-const URL: &str = "https://api.imgbb.com/1/upload";

@@ -67,7 +67,9 @@ impl<'a> Uploader<'a> {
             return match error_code {
                 100 => Err(Error::InvalidApiKey),
                 120 => Err(Error::InvalidBase64Data),
+                313 => Err(Error::ImageTooLarge),
                 400 => Err(Error::InvalidParameters(error_message)),
+                401 => Err(Error::UnsupportedFormat),
                 429 => Err(Error::RateLimitExceeded),
                 _ => Err(Error::ApiError {
                     message: error_message,

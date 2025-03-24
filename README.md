@@ -67,8 +67,7 @@ async fn main() -> Result<(), imgbb::Error> {
         .build()?;
         
     // Create an upload with additional options
-    let mut uploader = imgbb.upload_builder();
-    let response = uploader
+    let response = imgbb.upload_builder()
         .file("path/to/image.jpg")?
         .name("my_custom_name")
         .title("My Image Title")
@@ -108,8 +107,8 @@ async fn main() {
         Err(Error::ImageTooLarge) => {
             eprintln!("Image exceeds the maximum size limit");
         },
-        Err(Error::Timeout) => {
-            eprintln!("Request timed out, please try again");
+        Err(Error::RateLimitExceeded) => {
+            eprintln!("Rate limit exceeded, please wait and try again");
         },
         Err(e) => {
             eprintln!("Upload failed: {}", e);
@@ -161,6 +160,7 @@ You can provide your own preconfigured reqwest client for more control over netw
 ```rust
 use imgbb::ImgBB;
 use reqwest::Client;
+use std::time::Duration;
 
 // Create a custom reqwest client
 let client = Client::builder()

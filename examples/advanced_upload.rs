@@ -45,37 +45,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .user_agent(format!("MyApp/1.0 ImgBB-Uploader"))
         .build()?;
     
-    // Create upload builder
-    let mut builder = imgbb.upload_builder();
+    println!("Loading file: {}", cli.path);
     
-    // Add the file
-    match builder.file(&cli.path) {
-        Ok(_) => println!("File loaded successfully: {}", cli.path),
-        Err(e) => {
-            eprintln!("Error loading file: {}", e);
-            return Err(e.into());
-        }
-    }
+    // Create and configure the upload builder
+    let mut builder = imgbb.upload_builder()
+        .file(&cli.path)?;
     
     // Add optional parameters
     if let Some(exp) = cli.expiration {
-        builder.expiration(exp);
         println!("Setting expiration: {} seconds", exp);
+        builder = builder.expiration(exp);
     }
     
     if let Some(title) = cli.title {
-        builder.title(title.clone());
         println!("Setting title: {}", title);
+        builder = builder.title(title);
     }
     
     if let Some(name) = cli.name {
-        builder.name(name.clone());
         println!("Setting name: {}", name);
+        builder = builder.name(name);
     }
     
     if let Some(album) = cli.album {
-        builder.album(album.clone());
         println!("Setting album ID: {}", album);
+        builder = builder.album(album);
     }
     
     // Upload with detailed error handling

@@ -1,5 +1,6 @@
 use imgbb::ImgBB;
 use std::env;
+use base64::Engine;
 
 // Create a test image file for upload tests
 fn create_test_image() -> std::path::PathBuf {
@@ -123,8 +124,7 @@ async fn test_advanced_upload() {
     let imgbb = ImgBB::new(&api_key);
     
     // Create an advanced upload with options
-    let mut uploader = imgbb.upload_builder();
-    let response = uploader
+    let response = imgbb.upload_builder()
         .file(&image_path).expect("Failed to read file")
         .name("test-image")  // Note: ImgBB API converts underscores to hyphens
         .title("Integration Test Image")
@@ -178,5 +178,177 @@ async fn test_invalid_api_key() {
         Ok(_) => {
             panic!("Expected error but got success");
         }
+    }
+}
+
+// Test error handling for invalid base64 data
+#[tokio::test]
+async fn test_invalid_base64_data() {
+    let api_key = match env::var("IMGBB_API_KEY") {
+        Ok(key) => key,
+        Err(_) => {
+            println!("Skipping test - no IMGBB_API_KEY environment variable found");
+            return;
+        }
+    };
+
+    let imgbb = ImgBB::new(&api_key);
+    let invalid_base64 = "not_valid_base64_data";
+
+    // Create an uploader with invalid base64 data
+    let result = imgbb.upload_builder()
+        .data(invalid_base64)
+        .upload()
+        .await;
+
+    assert!(result.is_err(), "Expected error for invalid base64 data");
+    match result {
+        Err(imgbb::Error::InvalidBase64Data) => {
+            println!("Successfully detected invalid base64 data error");
+        },
+        Err(err) => {
+            panic!("Unexpected error type: {:?}", err);
+        },
+        Ok(_) => {
+            panic!("Expected error but got success");
+        }
+    }
+}
+
+// Test error handling for image too large
+#[tokio::test]
+async fn test_image_too_large() {
+    let api_key = match env::var("IMGBB_API_KEY") {
+        Ok(key) => key,
+        Err(_) => {
+            println!("Skipping test - no IMGBB_API_KEY environment variable found");
+            return;
+        }
+    };
+
+    let imgbb = ImgBB::new(&api_key);
+    
+    // Create a large base64 string (33MB when decoded)
+    let large_data = "A".repeat(44_000_000); // This will exceed the 32MB limit
+
+    let result = imgbb.upload_builder()
+        .data(&large_data)
+        .upload()
+        .await;
+
+    assert!(result.is_err(), "Expected error for large image");
+    match result {
+        Err(imgbb::Error::ImageTooLarge) => {
+            println!("Successfully detected image too large error");
+        },
+        Err(err) => {
+            panic!("Unexpected error type: {:?}", err);
+        },
+        Ok(_) => {
+            panic!("Expected error but got success");
+        }
+    }
+}
+
+// Test error handling for unsupported format
+#[tokio::test]
+async fn test_unsupported_format() {
+    let api_key = match env::var("IMGBB_API_KEY") {
+        Ok(key) => key,
+        Err(_) => {
+            println!("Skipping test - no IMGBB_API_KEY environment variable found");
+            return;
+        }
+    };
+
+    let imgbb = ImgBB::new(&api_key);
+    
+    // Create some invalid image data that's base64 encoded but not a valid image
+    let invalid_format = base64::engine::general_purpose::STANDARD.encode("This is not an image file");
+
+    let result = imgbb.upload_builder()
+        .data(&invalid_format)
+        .upload()
+        .await;
+
+    assert!(result.is_err(), "Expected error for unsupported format");
+    match result {
+        Err(imgbb::Error::UnsupportedFormat) => {
+            println!("Successfully detected unsupported format error");
+        },
+        Err(err) => {
+            panic!("Unexpected error type: {:?}", err);
+        },
+        Ok(_) => {
+            panic!("Expected error but got success");
+        }
+    }
+}
+
+// Test error handling for invalid parameters
+#[tokio::test]
+async fn test_invalid_parameters() {
+    let api_key = match env::var("IMGBB_API_KEY") {
+        Ok(key) => key,
+        Err(_) => {
+            println!("Skipping test - no IMGBB_API_KEY environment variable found");
+            return;
+        }
+    };
+
+    let imgbb = ImgBB::new(&api_key);
+    
+    // Try to upload without providing any data
+    let result = imgbb.upload_builder()
+        .upload()
+        .await;
+
+    assert!(result.is_err(), "Expected error for invalid parameters");
+    match result {
+        Err(imgbb::Error::InvalidParameters(_)) => {
+            println!("Successfully detected invalid parameters error");
+        },
+        Err(err) => {
+            panic!("Unexpected error type: {:?}", err);
+        },
+        Ok(_) => {
+            panic!("Expected error but got success");
+        }
+    }
+}
+
+// Test error handling for rate limit exceeded
+#[tokio::test]
+async fn test_rate_limit() {
+    let api_key = match env::var("IMGBB_API_KEY") {
+        Ok(key) => key,
+        Err(_) => {
+            println!("Skipping test - no IMGBB_API_KEY environment variable found");
+            return;
+        }
+    };
+
+    let imgbb = ImgBB::new(&api_key);
+    let test_data = base64::engine::general_purpose::STANDARD.encode("test");
+    
+    // Make multiple rapid requests to trigger rate limit
+    let mut results = Vec::new();
+    for _ in 0..100 {
+        let result = imgbb.upload_builder()
+            .data(&test_data)
+            .upload()
+            .await;
+        results.push(result);
+    }
+
+    // Check if any request hit the rate limit
+    let rate_limited = results.iter().any(|result| {
+        matches!(result, Err(imgbb::Error::RateLimitExceeded))
+    });
+
+    if rate_limited {
+        println!("Successfully detected rate limit error");
+    } else {
+        println!("Note: Rate limit was not triggered during the test");
     }
 } 

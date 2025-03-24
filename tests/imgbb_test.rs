@@ -50,4 +50,25 @@ async fn test_new_method() {
     // We can't test much else without making actual API calls
 }
 
+#[tokio::test]
+async fn test_builder_chaining() {
+    // Test that all builder methods can be chained
+    let imgbb = ImgBB::builder("test_key")
+        .timeout(Duration::from_secs(30))
+        .user_agent("test-agent")
+        .build();
+    
+    assert!(imgbb.is_ok());
+    
+    // Test with custom client
+    let custom_client = reqwest::Client::new();
+    let imgbb = ImgBB::builder("test_key")
+        .timeout(Duration::from_secs(30))
+        .user_agent("test-agent")
+        .client(custom_client)
+        .build();
+    
+    assert!(imgbb.is_ok());
+}
+
 // Rest of the file... 
