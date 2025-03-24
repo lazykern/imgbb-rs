@@ -67,6 +67,7 @@ pub struct ImgBBBuilder {
     api_key: String,
     timeout: Option<Duration>,
     user_agent: Option<String>,
+    client: Option<reqwest::Client>,
 }
 
 static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
@@ -118,10 +119,31 @@ impl ImgBB {
             api_key: api_key.into(),
             timeout: None,
             user_agent: None,
+            client: None,
         }
     }
 
     /// Creates a new ImgBB client with the given API key and reqwest client
+    ///
+    /// This method allows you to provide your own reqwest client with custom
+    /// configuration options that will be used for all API requests.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// use imgbb::ImgBB;
+    /// use reqwest::Client;
+    ///
+    /// // Create a custom reqwest client
+    /// let client = Client::builder()
+    ///     .timeout(std::time::Duration::from_secs(30))
+    ///     .user_agent("MyCustomApp/1.0")
+    ///     .build()
+    ///     .unwrap();
+    ///
+    /// // Use the custom client with ImgBB
+    /// let imgbb = ImgBB::new_with_client("your_api_key", client);
+    /// ```
     pub fn new_with_client<T>(api_key: T, client: reqwest::Client) -> Self
     where
         T: Into<String>,
@@ -390,9 +412,48 @@ impl ImgBBBuilder {
         self
     }
 
+    /// Set a custom reqwest client
+    ///
+    /// This method allows you to provide your own reqwest client with custom
+    /// configuration options that will be used for all API requests.
+    ///
+    /// Note: If you provide a custom client, any timeout or user agent
+    /// settings specified on the builder will be ignored in favor of
+    /// the custom client's configuration.
+    ///
+    /// # Arguments
+    ///
+    /// * `client` - The reqwest client to use for API requests
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// use imgbb::ImgBB;
+    /// use reqwest::Client;
+    ///
+    /// // Create a custom reqwest client
+    /// let client = Client::builder()
+    ///     .timeout(std::time::Duration::from_secs(30))
+    ///     .user_agent("MyCustomApp/1.0")
+    ///     .build()
+    ///     .unwrap();
+    ///
+    /// // Use the custom client with ImgBB
+    /// let imgbb = ImgBB::builder("your_api_key")
+    ///     .client(client)
+    ///     .build()
+    ///     .unwrap();
+    /// ```
+    pub fn client(mut self, client: reqwest::Client) -> Self {
+        self.client = Some(client);
+        self
+    }
+
     /// Build the ImgBB client
     ///
     /// This method builds the ImgBB client with the configured options.
+    /// If a custom client was provided, it will be used; otherwise,
+    /// a new client will be created with the specified timeout and user agent.
     ///
     /// # Examples
     ///
@@ -408,6 +469,15 @@ impl ImgBBBuilder {
     ///
     /// Returns an error if the reqwest client builder fails to build.
     pub fn build(self) -> Result<ImgBB, Error> {
+        // If a custom client was provided, use it
+        if let Some(client) = self.client {
+            return Ok(ImgBB {
+                client,
+                api_key: self.api_key,
+            });
+        }
+
+        // Otherwise, build a new client with the provided options
         let mut client_builder = reqwest::Client::builder();
 
         // Set user agent

@@ -15,6 +15,7 @@ A comprehensive and flexible [ImgBB](https://imgbb.com/) API client for Rust
 - Custom timeout settings
 - Custom user agent support
 - TLS features options: rustls-tls or native-tls
+- Use your own reqwest client with custom configuration
 
 ## Getting Started
 
@@ -151,6 +152,33 @@ By default, this crate uses the native TLS implementation. You can switch to rus
 ```toml
 [dependencies]
 imgbb = { version = "1.3.0", features = ["rustls-tls"], default-features = false }
+```
+
+### Custom reqwest Client
+
+You can provide your own preconfigured reqwest client for more control over network settings:
+
+```rust
+use imgbb::ImgBB;
+use reqwest::Client;
+
+// Create a custom reqwest client
+let client = Client::builder()
+    .timeout(Duration::from_secs(30))
+    .user_agent("MyApp/1.0")
+    .https_only(true)
+    .pool_max_idle_per_host(10)
+    .build()
+    .unwrap();
+
+// Use with direct constructor
+let imgbb = ImgBB::new_with_client("YOUR_API_KEY", client.clone());
+
+// Or use with builder pattern
+let imgbb = ImgBB::builder("YOUR_API_KEY")
+    .client(client)
+    .build()
+    .unwrap();
 ```
 
 ### Timeout Configuration
